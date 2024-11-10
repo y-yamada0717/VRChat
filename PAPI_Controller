@@ -1,0 +1,75 @@
+/*
+ *  PG名称：PAPI_Controller
+ *  機能説明：プレイヤーの角度によって可視化されるオブジェクトを切り替える
+ *  作成日：2024/09/23
+ *  作成者：リンクス
+ *  
+ *  変更履歴
+ *  ver1.0 2024/09/23 新規作成 リンクス
+ * 
+ */
+using UdonSharp;
+using UnityEngine;
+using VRC.SDKBase;
+using VRC.Udon;
+
+public class PAPI_Controller : UdonSharpBehaviour
+{
+    // 表示、非表示を切り替えるゲームオブジェクトを指定
+    [SerializeField] private GameObject[] MainObj;
+    [SerializeField] private GameObject[] SubObj;
+
+    // 角度の指定
+    [SerializeField] double[] Angle;
+
+    // 設置位置
+    [SerializeField] Transform m_base;
+
+    void Start()
+    {
+    }
+
+    void Update()
+    {
+        var AngleLen = Angle.Length;
+        var Radian = new double[AngleLen];
+
+        for (int i = 0; i < AngleLen; i++)
+        {
+            Radian[i] = Angle[i] * Mathf.Deg2Rad;
+        }
+        if (m_base != null)
+        {
+            // 基地座標
+            Vector3 base_pos = m_base.position;
+            // プレイヤー座標
+            Vector3 player_pos = Networking.LocalPlayer.GetTrackingData(VRCPlayerApi.TrackingDataType.Head).position;
+            // 距離
+            float distance = Mathf.Sqrt(Mathf.Pow(base_pos.x - player_pos.x, 2) + Mathf.Pow(base_pos.z - player_pos.z, 2));
+            // 高度
+            float high = Mathf.Abs(base_pos.y - player_pos.y);
+            // 進入角
+            double AOA = Mathf.Atan2(high, distance);
+
+            //　MainObjの数だけ処理を実行
+            var obj = MainObj.Length;
+            for (int i = 0; i < obj; i++)
+            {
+                if (AOA > Radian[i])
+
+                {
+                    // 進入角度が設定より大きい場合、MainObjを可視化、SubObjを不可視化
+                    MainObj[i].SetActive(true);
+                    SubObj[i].SetActive(false);
+                }
+                else
+                {
+                    // 進入角度が設定より小さい場合、MainObjを不可視化、SubObjを可視化
+                    MainObj[i].SetActive(false);
+                    SubObj[i].SetActive(true);
+                }
+            }
+
+        }
+    }
+}
